@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Txt</string>
+    <string name="action_open">Open</string>
+    <string name="action_save">Save</string>
+</resources>
