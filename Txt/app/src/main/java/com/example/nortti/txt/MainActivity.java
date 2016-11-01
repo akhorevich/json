@@ -1,166 +1,111 @@
 package com.example.nortti.txt;
-
-import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 
-public class MainActivity extends ActionBarActivity {
-    ArrayList<Item> items;
-    ListView ls;
-    ArrayAdapter<String> adapter;
-    Adapter mAdapter;
-    Item item;
-    private final static String FILENAME = "sample.txt"; // имя файла
-    private EditText mEditText, surEditText;
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    public void onCreate(Bundle savedInstanceState) {
+    EditText name;
+    EditText surname;
+    Button addButton;
+    ListView listView;
+    ArrayList<JSONObject> jsonArrayList;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        item  = new Item();
         setContentView(R.layout.activity_main);
+        jsonArrayList = new ArrayList<>();
+         listView = (ListView) findViewById(R.id.ls);
 
-        ls = (ListView) findViewById(R.id.ls);
-        mEditText = (EditText) findViewById(R.id.nameEd);
-        surEditText = (EditText) findViewById(R.id.surEd);
-        items = new ArrayList<>();
+        name = (EditText) findViewById(R.id.nameEd);
+        surname = (EditText) findViewById(R.id.surEd);
 
+        addButton = (Button) findViewById(R.id.addButton);
+        addButton.setOnClickListener(this);
+
+/*        if (TextUtils.isEmpty(name.getText().toString()) || TextUtils.isEmpty(surname.getText().toString())){
+            addButton.setEnabled(false);
+        } else {
+            addButton.setEnabled(true);
+        }*/
+
+
+
+
+    }
+
+    private JSONArray createJSON() throws JSONException {
+
+
+        JSONObject object;
+
+
+        /*** Ряд 1 ***/
+        object = new JSONObject();
+        object.put("Name", name.getText());
+        object.put("Surname", surname.getText());
+        jsonArrayList.add(object);
+
+
+        jsonArrayList.add(object);
+
+        JSONArray jsonArray = new JSONArray(jsonArrayList);
+        return jsonArray;
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
+    public void onClick(View view) {
+        switch (view.getId()){
+            case R.id.addButton:
+                try {
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem it) {
-        switch (it.getItemId()) {
-            case R.id.action_open:
-                Toast.makeText(this, readFromFile(), Toast.LENGTH_SHORT).show();
-                String[] separated = readFromFile().split("_");
-                item.setName(separated[0]);
-                item.setSurname(separated[1]);
-                items.add(item);
-                mAdapter = new Adapter(this,items);
-                ls.setAdapter(mAdapter);
+                    JSONArray data = createJSON();
 
-                return true;
-            case R.id.action_save:
-                writeToFile(mEditText.getText().toString(),surEditText.getText().toString());
-                mEditText.setText("");
-                surEditText.setText("");
-                return true;
-            default:
-                return true;
-        }
-    }
+                    ArrayList<HashMap<String, String>> arrayList = new ArrayList<>();
+                    HashMap<String, String> hashMap;
 
-    private void writeToFile(String name, String surname) {
-        try {
-            String data = name +"_"+surname;
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput("config.txt", Context.MODE_APPEND));
-            outputStreamWriter.write(data+"\n");
-            outputStreamWriter.close();
-        }
-        catch (IOException e) {
-            Log.e("Exception", "File write failed: " + e.toString());
-        }
-    }
+                    for(int i = 0; i < data.length(); i++){
+                        JSONObject jsonObject = data.getJSONObject(i);
+                        hashMap = new HashMap<>();
+                        hashMap.put("Name", jsonObject.getString("Name"));
+                        hashMap.put("Surname", jsonObject.getString("Surname"));
+                        arrayList.add(hashMap);
+                    }
 
+                    SimpleAdapter simpleAdapter;
+                    simpleAdapter = new SimpleAdapter(this, arrayList,
+                            R.layout.item, new String[]{
+                            "Name", "Surname"}, new int[]{R.id.name,
+                            R.id.surname});
+                    listView.setAdapter(simpleAdapter);
+                    name.setText("");
+                    surname.setText("");
 
-    private String readFromFile() {
-
-        String ret = "";
-
-        try {
-            InputStream inputStream = openFileInput("config.txt");
-
-            if ( inputStream != null ) {
-                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-                String receiveString = "";
-                StringBuilder stringBuilder = new StringBuilder();
-
-                while ( (receiveString = bufferedReader.readLine()) != null ) {
-                    stringBuilder.append(receiveString);
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
-
-                inputStream.close();
-                ret = stringBuilder.toString();
-
-            }
-        }
-        catch (FileNotFoundException e) {
-            Log.e("login activity", "File not found: " + e.toString());
-        } catch (IOException e) {
-            Log.e("login activity", "Can not read file: " + e.toString());
-        }
-
-        return ret;
-    }
-
- /*   // Метод для открытия файла
-    private void openFile(String fileName) {
-        try {
-            InputStream inputStream = openFileInput(fileName);
-
-            if (inputStream != null) {
-                InputStreamReader isr = new InputStreamReader(inputStream);
-                BufferedReader reader = new BufferedReader(isr);
-                String line;
-                StringBuilder builder = new StringBuilder();
-
-                while ((line = reader.readLine()) != null) {
-                    builder.append(line);
-                    //items.add(builder.toString());
-                }
-
-                inputStream.close();
-               // mEditText.setText(builder.toString());
-                mAdapter = new Adapter(this,items);
-                ls.setAdapter(mAdapter);
-                mAdapter.notifyDataSetChanged();
-            }
-        } catch (Throwable t) {
-            Toast.makeText(getApplicationContext(),
-                    "Exception: " + t.toString(), Toast.LENGTH_LONG).show();
+                break;
         }
     }
-
-    // Метод для сохранения файла
-    private void saveFile(String fileName) {
-        Item item = new Item();
-        try {
-            OutputStream outputStream = openFileOutput(fileName, 0);
-            OutputStreamWriter osw = new OutputStreamWriter(outputStream);
-            item.setName(mEditText.getText().toString());
-
-            item.setSurname(surEditText.getText().toString());
-
-            items.add(item);
-            osw.write(mEditText.getText().toString());
-            osw.close();
-            mEditText.setText("");
-            surEditText.setText("");
-        } catch (Throwable t) {
-            Toast.makeText(getApplicationContext(),
-                    "Exception: " + t.toString(), Toast.LENGTH_LONG).show();
-        }
-    }*/
 }
